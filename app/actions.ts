@@ -118,7 +118,7 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
         } else {
           throw new Error('No JSON object found with regex');
         }
-      } catch (regexError) {
+      } catch {
         // Estratégia 2: Limpeza agressiva manual
         try {
           const firstBrace = jsonString.indexOf('{');
@@ -131,7 +131,7 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
           } else {
             throw new Error('Could not find JSON boundaries');
           }
-        } catch (manualError) {
+        } catch {
           // Estratégia 3: Tentar encontrar múltiplos objetos JSON e pegar o maior
           try {
             const jsonObjects: string[] = [];
@@ -159,7 +159,7 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
             } else {
               throw new Error('No valid JSON objects found');
             }
-          } catch (extractError) {
+          } catch {
             return { 
               success: false, 
               error: `Failed to parse AI response. Tried multiple parsing strategies. Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}. Please try again.` 

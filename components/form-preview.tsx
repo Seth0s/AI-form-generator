@@ -1,7 +1,6 @@
 'use client';
 
-import { FormEvent } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, Control, FieldErrors } from 'react-hook-form';
 import { FormSchema, FormField } from '@/types/form';
 import jsPDF from 'jspdf';
 
@@ -10,7 +9,11 @@ interface FormPreviewProps {
 }
 
 interface FormData {
-  [key: string]: any;
+  [key: string]: string | number | boolean | string[] | undefined;
+}
+
+interface JSPDFInternal {
+  pages: { length: number };
 }
 
 export default function FormPreview({ schema }: FormPreviewProps) {
@@ -99,7 +102,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
     });
 
     // Footer - Timestamp (add to all pages)
-    const totalPages = (doc as any).internal.pages.length || 1;
+    const totalPages = (doc as unknown as { internal: JSPDFInternal }).internal.pages.length || 1;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(9);
@@ -118,7 +121,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
     generatePDF(data);
   };
 
-  const renderField = (field: FormField, control: any, errors: any) => {
+  const renderField = (field: FormField, control: Control<FormData>, errors: FieldErrors<FormData>) => {
     return (
       <Controller
         key={field.id}
@@ -141,6 +144,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                   <input
                     type={field.type}
                     {...formField}
+                    value={String(formField.value || '')}
                     placeholder={field.placeholder}
                     className="h-12 w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
@@ -157,6 +161,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                 <div>
                   <textarea
                     {...formField}
+                    value={String(formField.value || '')}
                     placeholder={field.placeholder}
                     rows={4}
                     className="min-h-[100px] w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
@@ -174,6 +179,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                 <div>
                   <select
                     {...formField}
+                    value={String(formField.value || '')}
                     className="h-12 w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   >
                     <option value="">Select an option...</option>
@@ -197,8 +203,11 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      {...formField}
-                      checked={formField.value || false}
+                      checked={typeof formField.value === 'boolean' ? formField.value : false}
+                      onChange={(e) => formField.onChange(e.target.checked)}
+                      onBlur={formField.onBlur}
+                      name={formField.name}
+                      ref={formField.ref}
                       className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900"
                     />
                     <label

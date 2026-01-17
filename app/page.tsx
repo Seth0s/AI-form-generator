@@ -113,7 +113,7 @@ export default function Home() {
         setFormSchema(importedSchema as FormSchema);
         setError(null);
         showToast('Form loaded successfully!');
-      } catch (err) {
+      } catch {
         setError('Failed to parse JSON file. Please check the file format.');
       }
     };
