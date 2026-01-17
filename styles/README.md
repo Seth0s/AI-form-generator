@@ -1,15 +1,13 @@
 # 📁 Estrutura de Estilos
 
-Esta pasta contém todos os arquivos de estilo organizados por página e componente.
+Esta pasta contém os arquivos de estilo do projeto.
 
 ## 📂 Estrutura
 
 ```
 styles/
 ├── globals.css              # Estilos globais e variáveis CSS
-├── home.module.css          # Estilos específicos da página principal (app/page.tsx)
-├── form-preview.module.css  # Estilos do componente FormPreview
-├── components.module.css    # Estilos compartilhados de componentes
+├── generated-form.css       # Estilos para código JSX gerado (usado no "Copy JSX Code")
 ├── index.ts                 # Exportações centralizadas
 └── README.md                # Este arquivo
 ```
@@ -22,43 +20,12 @@ styles/
 - Estilos globais do body e elementos base
 - Suporte a dark mode
 
-### `home.module.css`
-- Estilos da página principal (`app/page.tsx`)
-- Classes para:
-  - Container e layout
-  - Header (título e subtítulo)
-  - Search row (input e botão)
-  - Examples card
-  - Mensagens de erro
-
-### `form-preview.module.css`
-- Estilos do componente `FormPreview`
-- Classes para:
-  - Formulário e campos
-  - Inputs, textareas, selects, checkboxes
-  - Labels e validação
-  - Botão de submit
-
-### `components.module.css`
-- Estilos compartilhados entre componentes
-- Classes para:
-  - Toolbar de ações
-  - Headers de ação
-  - Cards de formulário
-  - Toast notifications
+### `generated-form.css`
+- Estilos para o código JSX gerado pela funcionalidade "Copy JSX Code"
+- Esses estilos são incluídos como comentário no código gerado
+- Usuários podem copiar esses estilos para seus projetos
 
 ## 🎨 Como Usar
-
-### Em Componentes React
-
-```typescript
-import styles from '@/styles/home.module.css';
-
-// Use as classes
-<div className={styles.container}>
-  <h1 className={styles.title}>Título</h1>
-</div>
-```
 
 ### Estilos Globais
 
@@ -68,9 +35,10 @@ Os estilos globais são importados automaticamente em `app/layout.tsx`:
 import '../styles/globals.css';
 ```
 
+### Tailwind CSS
+
+O projeto usa **Tailwind CSS diretamente** nos componentes. Todas as classes são aplicadas inline no JSX, sem necessidade de arquivos CSS Modules.
+
 ## 📌 Nota
 
-A maioria dos estilos ainda usa Tailwind CSS inline. Os módulos CSS aqui são para:
-- Organização e manutenibilidade
-- Estilos complexos que não são facilmente expressos com Tailwind
-- Reutilização de estilos entre componentes
+Este projeto utiliza **Tailwind CSS** para todos os estilos, aplicados diretamente nos componentes React. Não há necessidade de arquivos CSS Modules separados.

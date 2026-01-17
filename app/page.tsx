@@ -12,10 +12,6 @@ import ActionsToolbar from '@/components/actions-toolbar';
 import { generateFormComponentCode } from '@/lib/code-generator';
 import { validateFormSchema } from '@/lib/form-validator';
 
-// Styles
-import homeStyles from '@/styles/home.module.css';
-import componentStyles from '@/styles/components.module.css';
-
 const EXAMPLE_DESCRIPTIONS = [
   'A contact form with name, email, subject, and message fields',
   'A job application form with personal info, work experience, and skills',
@@ -154,16 +150,74 @@ export default function Home() {
   };
 
   return (
-    <main className={homeStyles.main}>
-      <div className={homeStyles.contentWrapper}>
-        <div className={homeStyles.header}>
-          <h1 className={homeStyles.title}>
+    <main className="min-h-screen bg-slate-50">
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             AI Form Builder
           </h1>
-          <p className={homeStyles.subtitle}>
+          <p className="text-gray-500 mb-8">
             Describe your form in plain English and let AI generate it for you
           </p>
         </div>
+
+        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 flex h-14 overflow-hidden mb-4">
+          <div className="flex-1 flex items-center">
+            <textarea
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Form for high school students..."
+              className="w-full px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none resize-none border-0 bg-transparent"
+              rows={1}
+              disabled={isPending}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (prompt.trim() && !isPending) {
+                    handleGenerate();
+                  }
+                }
+              }}
+            />
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={isPending || !prompt.trim()}
+            className="h-14 px-8 bg-blue-700 text-white font-medium hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap flex-shrink-0"
+          >
+            {isPending ? (
+              <svg
+                className="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              'Generate form'
+            )}
+          </button>
+        </div>
+
+        {error && (
+          <div className="max-w-3xl mx-auto mt-3 rounded-md bg-red-50 border border-red-200 p-3">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {!formSchema && (
@@ -174,67 +228,9 @@ export default function Home() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className={homeStyles.searchRow}>
-                <div className={homeStyles.inputWrapper}>
-                  <textarea
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Form for high school students..."
-                    className={homeStyles.textarea}
-                    rows={1}
-                    disabled={isPending}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (prompt.trim() && !isPending) {
-                          handleGenerate();
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={handleGenerate}
-                  disabled={isPending || !prompt.trim()}
-                  className={homeStyles.generateButton}
-                >
-                  {isPending ? (
-                    <svg
-                      className={homeStyles.spinner}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className={homeStyles.spinnerCircle}
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className={homeStyles.spinnerPath}
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  ) : (
-                    'Generate form'
-                  )}
-                </button>
-              </div>
-
-              {error && (
-                <div className={homeStyles.errorContainer}>
-                  <p className={homeStyles.errorText}>{error}</p>
-                </div>
-              )}
-
-              <div className={homeStyles.examplesCard}>
-                <p className={homeStyles.examplesTitle}>Example descriptions</p>
-                <div className={homeStyles.examplesList}>
+              <div className="max-w-3xl mx-auto mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <p className="font-bold text-lg mb-4 text-gray-900">Example descriptions</p>
+                <div className="flex flex-col gap-2">
                   {EXAMPLE_DESCRIPTIONS.map((example, index) => (
                     <motion.button
                       key={index}
@@ -242,7 +238,7 @@ export default function Home() {
                       onClick={() => handleExampleClick(example)}
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
-                      className={homeStyles.exampleChip}
+                      className="w-full text-left p-3 rounded-md border border-gray-100 hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-600 bg-white shadow-sm"
                     >
                       {example}
                     </motion.button>
@@ -261,58 +257,6 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              <div className={homeStyles.searchRow}>
-                <div className={homeStyles.inputWrapper}>
-                  <textarea
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Form for high school students..."
-                    className={homeStyles.textarea}
-                    rows={1}
-                    disabled={isPending}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (prompt.trim() && !isPending) {
-                          handleGenerate();
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={handleGenerate}
-                  disabled={isPending || !prompt.trim()}
-                  className={homeStyles.generateButton}
-                >
-                  {isPending ? (
-                    <svg
-                      className={homeStyles.spinner}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className={homeStyles.spinnerCircle}
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className={homeStyles.spinnerPath}
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  ) : (
-                    'Generate form'
-                  )}
-                </button>
-              </div>
-
               <ActionsToolbar
                 onExport={handleExport}
                 onImport={handleImport}
@@ -325,7 +269,7 @@ export default function Home() {
                 type="file"
                 accept=".json"
                 onChange={handleFileChange}
-                className={homeStyles.hiddenInput}
+                className="hidden"
                 aria-label="Import form schema JSON file"
               />
 
@@ -342,7 +286,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className={componentStyles.toast}
+              className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-md shadow-lg z-50"
             >
               {toastMessage}
             </motion.div>

@@ -4,7 +4,6 @@ import { FormEvent } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { FormSchema, FormField } from '@/types/form';
 import jsPDF from 'jspdf';
-import formStyles from '@/styles/form-preview.module.css';
 
 interface FormPreviewProps {
   schema: FormSchema;
@@ -146,7 +145,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                     className="h-12 w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                   {fieldError && (
-                    <p className={formStyles.errorMessage}>
+                    <p className="text-sm text-red-600 mt-1">
                       {fieldError.message}
                     </p>
                   )}
@@ -163,7 +162,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                     className="min-h-[100px] w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
                   />
                   {fieldError && (
-                    <p className={formStyles.errorMessage}>
+                    <p className="text-sm text-red-600 mt-1">
                       {fieldError.message}
                     </p>
                   )}
@@ -185,7 +184,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                     ))}
                   </select>
                   {fieldError && (
-                    <p className={formStyles.errorMessage}>
+                    <p className="text-sm text-red-600 mt-1">
                       {fieldError.message}
                     </p>
                   )}
@@ -210,7 +209,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
                     </label>
                   </div>
                   {fieldError && (
-                    <p className={formStyles.errorMessage}>
+                    <p className="text-sm text-red-600 mt-1">
                       {fieldError.message}
                     </p>
                   )}
@@ -238,9 +237,9 @@ export default function FormPreview({ schema }: FormPreviewProps) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className={formStyles.form}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {schema.fields.map((field) => (
-          <div key={field.id} className={formStyles.fieldContainer}>
+          <div key={field.id} className="space-y-2">
           {field.type !== 'checkbox' && (
             <label
               htmlFor={field.id}

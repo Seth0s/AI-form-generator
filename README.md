@@ -54,16 +54,20 @@ npm run dev
 
 ```
 ├── app/
-│   ├── api/
-│   │   └── generate-form/
-│   │       └── route.ts          # API endpoint for form generation
-│   ├── globals.css                # Global styles
+│   ├── actions.ts                 # Server Action for form generation (uses Gemini API)
 │   ├── layout.tsx                 # Root layout
 │   └── page.tsx                   # Main page component
 ├── components/
-│   └── FormRenderer.tsx           # Component to render generated forms
+│   ├── form-preview.tsx           # Component to render and preview generated forms
+│   └── actions-toolbar.tsx        # Toolbar with Save/Load/Copy actions
+├── lib/
+│   ├── code-generator.ts          # Utility to generate JSX code from schema
+│   └── form-validator.ts         # Utility to validate imported form schemas
 ├── types/
-│   └── form.ts                    # TypeScript type definitions
+│   └── form.ts                    # TypeScript type definitions (FormSchema, FormField)
+├── styles/
+│   ├── globals.css                # Global styles and CSS variables
+│   └── generated-form.css         # Styles for generated JSX code
 └── package.json
 ```
 
