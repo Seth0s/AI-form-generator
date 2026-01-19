@@ -92,17 +92,8 @@ interface FormSchema {
   formDescription: string;
   fields: FormField[];
 }
+
 ```
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import your repository on [Vercel](https://vercel.com)
-3. Add your `GEMINI_API_KEY` as an environment variable
-4. Deploy!
-
 ### Other Platforms
 
 Make sure to set the `GEMINI_API_KEY` environment variable in your hosting platform's settings.

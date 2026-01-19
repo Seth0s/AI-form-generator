@@ -2,6 +2,25 @@
 
 import { FormSchema } from '@/types/form';
 
+// Configuração para Vercel: permite até 60 segundos de execução
+export async function maxDuration() {
+  return 60000;
+}
+
+// Função auxiliar para criar timeout
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
+
 export async function generateForm(prompt: string): Promise<{ success: true; schema: FormSchema } | { success: false; error: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
   
@@ -13,6 +32,26 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
     return { success: false, error: 'Prompt is required' };
   }
 
+  // Envolver toda a lógica com timeout de 60 segundos
+  try {
+    return await withTimeout(
+      generateFormInternal(prompt, apiKey),
+      60000, // 60 segundos em milissegundos
+      'Timeout: A operação excedeu 60 segundos. Por favor, tente novamente.'
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Timeout')) {
+      return { success: false, error: error.message };
+    }
+    console.error('Error generating form:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to generate form. Please try again.' 
+    };
+  }
+}
+
+async function generateFormInternal(prompt: string, apiKey: string): Promise<{ success: true; schema: FormSchema } | { success: false; error: string }> {
   const systemInstruction = `
     You are an expert form builder.
     Your job is to take a user description and return a JSON object representing a form.
