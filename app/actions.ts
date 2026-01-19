@@ -2,12 +2,12 @@
 
 import { FormSchema } from '@/types/form';
 
-// Configuração para Vercel: permite até 60 segundos de execução
+/** Vercel: extends serverless function limit to 60 seconds. */
 export async function maxDuration() {
   return 60000;
 }
 
-// Função auxiliar para criar timeout
+/** Wraps a promise with a timeout using Promise.race. */
 function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -21,9 +21,13 @@ function withTimeout<T>(
   ]);
 }
 
+/**
+ * Server Action: calls Gemini to generate a FormSchema from a text description.
+ * Returns { success, schema } or { success: false, error }.
+ */
 export async function generateForm(prompt: string): Promise<{ success: true; schema: FormSchema } | { success: false; error: string }> {
   const apiKey = process.env.GEMINI_API_KEY;
-  
+
   if (!apiKey) {
     return { success: false, error: 'GEMINI_API_KEY is not configured' };
   }
@@ -32,12 +36,12 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
     return { success: false, error: 'Prompt is required' };
   }
 
-  // Envolver toda a lógica com timeout de 60 segundos
+  /* Run the actual generation with a 60s cap; forward timeout as user-facing error. */
   try {
     return await withTimeout(
       generateFormInternal(prompt, apiKey),
-      60000, // 60 segundos em milissegundos
-      'Timeout: A operação excedeu 60 segundos. Por favor, tente novamente.'
+      60000,
+      'Timeout: The operation exceeded 60 seconds. Please try again.'
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes('Timeout')) {
@@ -51,6 +55,7 @@ export async function generateForm(prompt: string): Promise<{ success: true; sch
   }
 }
 
+/** Core logic: Gemini request, JSON extraction, fallback parsing, and schema validation. */
 async function generateFormInternal(prompt: string, apiKey: string): Promise<{ success: true; schema: FormSchema } | { success: false; error: string }> {
   const systemInstruction = `
     You are an expert form builder.
@@ -83,25 +88,15 @@ async function generateFormInternal(prompt: string, apiKey: string): Promise<{ s
   `;
 
   try {
+    /* Gemini REST: system instruction + user prompt; responseMimeType nudges raw JSON. */
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: systemInstruction }, 
-                { text: `User request: ${prompt}` }
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json', // Força o Gemini a devolver JSON
-          },
+          contents: [{ parts: [{ text: systemInstruction }, { text: `User request: ${prompt}` }] }],
+          generationConfig: { responseMimeType: 'application/json' },
         }),
       }
     );
@@ -116,67 +111,58 @@ async function generateFormInternal(prompt: string, apiKey: string): Promise<{ s
     }
 
     const data = await response.json();
-    
-    // Extraindo o texto da resposta
     let jsonString = data.candidates[0].content.parts[0].text;
-    
-    // Limpar a resposta - remover possíveis markdown code blocks
+
+    /* 1. Trim leading/trailing whitespace. */
     jsonString = jsonString.trim();
-    
-    // Remover markdown code blocks se existirem
+
+    /* 2. Strip Markdown code fences (```json ... ``` or ``` ... ```). */
     if (jsonString.startsWith('```json')) {
       jsonString = jsonString.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
     } else if (jsonString.startsWith('```')) {
       jsonString = jsonString.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
     }
-    
-    // Tentar extrair apenas o JSON válido (caso haja texto antes/depois)
-    // Procurar pelo primeiro { e último } válido
+
+    /* 3. Extract substring between first { and last } when there is extra text before/after. */
     const firstBrace = jsonString.indexOf('{');
     const lastBrace = jsonString.lastIndexOf('}');
-    
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       jsonString = jsonString.substring(firstBrace, lastBrace + 1);
     }
-    
-    // Parseando para garantir que é um objeto válido
+
     let formSchema: FormSchema;
     try {
+      /* 4. Primary: parse the cleaned string as JSON. */
       formSchema = JSON.parse(jsonString);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
       console.error('Raw response (first 1000 chars):', jsonString.substring(0, 1000));
       console.error('Raw response length:', jsonString.length);
-      
-      // Estratégia 1: Extrair JSON usando regex (mais robusto)
+
       try {
+        /* 5. Fallback A: regex to capture the first {...} object. */
         const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-        if (jsonMatch && jsonMatch[0]) {
+        if (jsonMatch?.[0]) {
           formSchema = JSON.parse(jsonMatch[0]);
-          console.log('✅ JSON parseado usando regex');
         } else {
           throw new Error('No JSON object found with regex');
         }
       } catch {
-        // Estratégia 2: Limpeza agressiva manual
         try {
+          /* 6. Fallback B: re-apply first { and last } boundaries. */
           const firstBrace = jsonString.indexOf('{');
           const lastBrace = jsonString.lastIndexOf('}');
-          
           if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            const cleanedJson = jsonString.substring(firstBrace, lastBrace + 1);
-            formSchema = JSON.parse(cleanedJson);
-            console.log('✅ JSON parseado após limpeza manual');
+            formSchema = JSON.parse(jsonString.substring(firstBrace, lastBrace + 1));
           } else {
             throw new Error('Could not find JSON boundaries');
           }
         } catch {
-          // Estratégia 3: Tentar encontrar múltiplos objetos JSON e pegar o maior
           try {
+            /* 7. Fallback C: find all complete {...} by brace depth, parse the largest. */
             const jsonObjects: string[] = [];
             let depth = 0;
             let start = -1;
-            
             for (let i = 0; i < jsonString.length; i++) {
               if (jsonString[i] === '{') {
                 if (depth === 0) start = i;
@@ -189,12 +175,10 @@ async function generateFormInternal(prompt: string, apiKey: string): Promise<{ s
                 }
               }
             }
-            
+
             if (jsonObjects.length > 0) {
-              // Pegar o maior objeto JSON
-              const largestJson = jsonObjects.reduce((a, b) => a.length > b.length ? a : b);
-              formSchema = JSON.parse(largestJson);
-              console.log('✅ JSON parseado extraindo o maior objeto');
+              const largest = jsonObjects.reduce((a, b) => (a.length > b.length ? a : b));
+              formSchema = JSON.parse(largest);
             } else {
               throw new Error('No valid JSON objects found');
             }
@@ -208,7 +192,7 @@ async function generateFormInternal(prompt: string, apiKey: string): Promise<{ s
       }
     }
 
-    // Validate the schema
+    /* Require formTitle and a non-empty fields array. */
     if (!formSchema.formTitle || !formSchema.fields || !Array.isArray(formSchema.fields)) {
       return { 
         success: false, 
@@ -216,7 +200,7 @@ async function generateFormInternal(prompt: string, apiKey: string): Promise<{ s
       };
     }
 
-    // Ensure each field has required properties
+    /* Each field must have id, label, and type. */
     for (const field of formSchema.fields) {
       if (!field.id || !field.label || !field.type) {
         return { 

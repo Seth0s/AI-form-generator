@@ -1,9 +1,8 @@
 import { FormSchema, FormField } from '@/types/form';
 
 /**
- * Generates JSX code string for a single form field based on its type
- * @param field - The form field to generate JSX for
- * @returns JSX string representation of the field
+ * Generates JSX code string for a single form field based on its type.
+ * Checkbox omits the top-level label (label sits next to the input).
  */
 function generateFieldJSX(field: FormField): string {
   const labelJSX = field.type !== 'checkbox' 
@@ -71,16 +70,15 @@ ${optionsJSX}
 }
 
 /**
- * Generates a complete React component JSX code string from a FormSchema
- * @param schema - The form schema to generate code from
- * @returns Complete React component code as a string
+ * Generates a complete React component JSX string from a FormSchema.
+ * Output uses form-container, form-header, form-input, etc.; user must copy styles/generated-form.css.
  */
 export function generateFormComponentCode(schema: FormSchema): string {
   const fieldsJSX = schema.fields.map(field => generateFieldJSX(field)).join('\n\n');
-  const componentName = schema.formTitle.replace(/[^a-zA-Z0-9]/g, '');
+  const componentName = schema.formTitle.replace(/[^a-zA-Z0-9]/g, ''); /* Safe for function name */
 
   const jsxCode = `import { FormEvent } from 'react';
-import './generated-form.css'; // Import the CSS file
+import './generated-form.css';
 
 export default function ${componentName}Form() {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {

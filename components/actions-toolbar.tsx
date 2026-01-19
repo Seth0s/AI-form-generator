@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowUp, Clipboard } from 'lucide-react';
 
+/** Toolbar above the generated form: Create new, Save JSON, Load JSON, Copy JSX. */
 interface ActionsToolbarProps {
   onExport: () => void;
   onImport: () => void;

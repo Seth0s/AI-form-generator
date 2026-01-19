@@ -1,9 +1,7 @@
 import { FormSchema } from '@/types/form';
 
 /**
- * Validates an imported form schema structure
- * @param schema - The schema object to validate
- * @returns Object with isValid flag and error message if invalid
+ * Validates an imported form schema: must be object, have fields array, each field with id/label/type.
  */
 export function validateFormSchema(schema: unknown): { isValid: boolean; error?: string } {
   if (!schema || typeof schema !== 'object') {

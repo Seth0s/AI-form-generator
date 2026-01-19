@@ -8,20 +8,18 @@ interface FormPreviewProps {
   schema: FormSchema;
 }
 
+/** Form values keyed by field id; supports text, number, boolean, string[]. */
 interface FormData {
   [key: string]: string | number | boolean | string[] | undefined;
 }
 
+/** jsPDF does not type internal.pages; used only for page count. */
 interface JSPDFInternal {
   pages: { length: number };
 }
 
 export default function FormPreview({ schema }: FormPreviewProps) {
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
+  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     defaultValues: schema.fields.reduce((acc, field) => {
       acc[field.id] = field.type === 'checkbox' ? false : '';
       return acc;
@@ -31,96 +29,70 @@ export default function FormPreview({ schema }: FormPreviewProps) {
   const generatePDF = (data: FormData) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
+    const footerHeight = 15;
     let yPosition = margin;
 
-    // Header - Title
+    /* Title and description, then horizontal rule. */
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text(schema.formTitle, margin, yPosition);
     yPosition += 10;
 
-    // Header - Description
     if (schema.formDescription) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      const descriptionLines = doc.splitTextToSize(
-        schema.formDescription,
-        pageWidth - 2 * margin
-      );
+      const descriptionLines = doc.splitTextToSize(schema.formDescription, pageWidth - 2 * margin);
       doc.text(descriptionLines, margin, yPosition);
       yPosition += descriptionLines.length * 6 + 5;
     }
 
-    // Add a line separator
     yPosition += 5;
     doc.setLineWidth(0.5);
     doc.line(margin, yPosition, pageWidth - margin, yPosition);
     yPosition += 10;
 
-    // Body - Form fields and answers
+    /* Each field: label in bold, value below; add page when near footer area. */
     doc.setFontSize(11);
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const footerHeight = 15;
-    
     schema.fields.forEach((field) => {
       const value = data[field.id];
-
-      // Check if we need a new page (leave space for footer)
       if (yPosition > pageHeight - footerHeight) {
         doc.addPage();
         yPosition = margin;
       }
 
-      // Label (Question) in bold
       doc.setFont('helvetica', 'bold');
-      const labelText = `${field.label}${field.required ? ' *' : ''}`;
-      doc.text(labelText, margin, yPosition);
+      doc.text(`${field.label}${field.required ? ' *' : ''}`, margin, yPosition);
       yPosition += 7;
 
-      // Value (Answer) in normal text
       doc.setFont('helvetica', 'normal');
       let answerText = '';
+      if (field.type === 'checkbox') answerText = value ? 'Yes' : 'No';
+      else if (field.type === 'select' && !value) answerText = 'Not selected';
+      else if (!value || value === '') answerText = 'Not provided';
+      else answerText = String(value);
 
-      if (field.type === 'checkbox') {
-        answerText = value ? 'Yes' : 'No';
-      } else if (field.type === 'select' && !value) {
-        answerText = 'Not selected';
-      } else if (!value || value === '') {
-        answerText = 'Not provided';
-      } else {
-        answerText = String(value);
-      }
-
-      // Handle long text by splitting into multiple lines
-      const answerLines = doc.splitTextToSize(
-        answerText,
-        pageWidth - 2 * margin
-      );
+      const answerLines = doc.splitTextToSize(answerText, pageWidth - 2 * margin);
       doc.text(answerLines, margin, yPosition);
-      yPosition += answerLines.length * 5 + 8; // Add spacing between questions
+      yPosition += answerLines.length * 5 + 8;
     });
 
-    // Footer - Timestamp (add to all pages)
+    /* jsPDF types omit internal.pages; use narrow interface for page count. */
     const totalPages = (doc as unknown as { internal: JSPDFInternal }).internal.pages.length || 1;
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      const timestamp = `Generated on ${new Date().toLocaleString()}`;
-      const footerY = pageHeight - 10;
-      doc.text(timestamp, margin, footerY);
+      doc.text(`Generated on ${new Date().toLocaleString()}`, margin, pageHeight - 10);
     }
 
-    // Save the PDF
-    const fileName = `${schema.formTitle.replace(/[^a-zA-Z0-9]/g, '-')}-filled.pdf`;
-    doc.save(fileName);
+    doc.save(`${schema.formTitle.replace(/[^a-zA-Z0-9]/g, '-')}-filled.pdf`);
   };
 
-  const onSubmit = (data: FormData) => {
-    generatePDF(data);
-  };
+  const onSubmit = (data: FormData) => generatePDF(data);
 
+  /** Renders one form field via react-hook-form Controller; switch on field.type. */
   const renderField = (field: FormField, control: Control<FormData>, errors: FieldErrors<FormData>) => {
     return (
       <Controller
@@ -134,7 +106,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
         }}
         render={({ field: formField }) => {
           const fieldError = errors[field.id];
-
+          /* value forced to string for text/email/number/textarea/select; checkbox uses checked/onChange. */
           switch (field.type) {
             case 'text':
             case 'email':
@@ -198,6 +170,7 @@ export default function FormPreview({ schema }: FormPreviewProps) {
               );
 
             case 'checkbox':
+              /* Checkbox: no {...formField} to avoid passing value; use checked + onChange(e.target.checked). */
               return (
                 <div>
                   <div className="flex items-center space-x-2">

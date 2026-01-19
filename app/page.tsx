@@ -1,10 +1,7 @@
 'use client';
 
-// External libraries
 import { useState, useTransition, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-// Internal modules
 import { FormSchema } from '@/types/form';
 import { generateForm } from './actions';
 import FormPreview from '@/components/form-preview';
@@ -12,6 +9,7 @@ import ActionsToolbar from '@/components/actions-toolbar';
 import { generateFormComponentCode } from '@/lib/code-generator';
 import { validateFormSchema } from '@/lib/form-validator';
 
+/** Sample prompts shown as clickable chips on the home view. */
 const EXAMPLE_DESCRIPTIONS = [
   'A contact form with name, email, subject, and message fields',
   'A job application form with personal info, work experience, and skills',
@@ -24,12 +22,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); /* Hidden <input type="file"> for Load JSON */
 
-  /**
-   * Handles form generation from user prompt
-   * Validates input, clears previous state, and triggers AI generation
-   */
   const handleGenerate = () => {
     if (!prompt.trim()) {
       setError('Please enter a form description');
@@ -39,6 +33,7 @@ export default function Home() {
     setError(null);
     setFormSchema(null);
 
+    /* useTransition keeps UI responsive; isPending drives loading state. */
     startTransition(async () => {
       const result = await generateForm(prompt);
       
@@ -61,13 +56,8 @@ export default function Home() {
     setError(null);
   };
 
-  /**
-   * Exports the current form schema as a JSON file
-   * Creates a downloadable blob and triggers browser download
-   */
   const handleExport = () => {
     if (!formSchema) return;
-
     const jsonString = JSON.stringify(formSchema, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -78,22 +68,14 @@ export default function Home() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
     showToast('JSON exported successfully!');
   };
 
-  /**
-   * Triggers the hidden file input to open file picker
-   */
   const handleImport = () => {
     fileInputRef.current?.click();
   };
 
-  /**
-   * Handles file selection and imports form schema from JSON
-   * Validates schema structure and required fields before importing
-   * TODO: Consider using zod schema validation for more robust type checking
-   */
+  /* Parse file, run validateFormSchema, then setFormSchema on success. */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -124,15 +106,9 @@ export default function Home() {
     }
   };
 
-  /**
-   * Generates React component code from form schema and copies to clipboard
-   * Uses code generator utility to create JSX string
-   */
   const handleCopyCode = () => {
     if (!formSchema) return;
-
     const jsxCode = generateFormComponentCode(formSchema);
-
     navigator.clipboard.writeText(jsxCode).then(() => {
       showToast('JSX code copied to clipboard!');
     }).catch(() => {
@@ -140,15 +116,13 @@ export default function Home() {
     });
   };
 
-  /**
-   * Displays a temporary toast notification
-   * TODO: Consider replacing with a toast library (e.g., sonner, react-hot-toast) for better UX and features
-   */
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  /* Enter (without Shift) in the textarea submits the form. */
+  /* AnimatePresence mode="wait" swaps home (examples) vs generated (toolbar + FormPreview). */
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-16">
@@ -174,9 +148,7 @@ export default function Home() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (prompt.trim() && !isPending) {
-                    handleGenerate();
-                  }
+                  if (prompt.trim() && !isPending) handleGenerate();
                 }
               }}
             />
